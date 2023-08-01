@@ -8,6 +8,8 @@ import {
     doc,
     where,
     query,
+    QueryDocumentSnapshot,
+    DocumentReference,
 } from 'firebase/firestore/lite';
 
 import Register from '../../models/register.model';
@@ -138,14 +140,23 @@ const resetRegister = async (key: string, value: number): Promise<Register> => {
 
 const deleteRegister = async (key: string): Promise<void> => {
     return new Promise(async (resolve, reject) => {
-        const docRef = doc(registerCollection, key);
+        let docRef: DocumentReference<Register, Register>;
 
         try {
-            const registerSnapshot = await getDoc(docRef);
+            const registerQuery = query(
+                registerCollection,
+                where('key', '==', key),
+            );
 
-            if (!registerSnapshot.exists()) {
+            const querySnapshot = await getDocs(registerQuery);
+
+            const docSnapshotArray = querySnapshot.docs;
+
+            if (docSnapshotArray.length === 0) {
                 return reject('Key is not registered yet.');
             }
+
+            docRef = docSnapshotArray[0].ref;
         } catch (error) {
             const errorMessage = `Fail to get document: ${getErrorMessage(
                 error,
